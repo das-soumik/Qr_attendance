@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>QR Code Attendance</title>
+    <style>
+        #reader {
+            width: 500px;
+            height: 300px;
+            border: 1px solid black;
+            display: none;  /* Initially hidden */
+        }
+        .error {
+            color: red;
+        }
+        .loading {
+            font-size: 18px;
+            color: blue;
+        }
+    </style>
+    <!-- Include the HTML5 QR Code Library -->
+    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+</head>
+<body>
+    <h1>Scan QR Code</h1>
+    <div id="cameraCheck" class="error"></div>
+    <div id="loadingMessage" class="loading"></div>
+    <div id="reader"></div>
+
+    <script>
+        // Check if the camera is accessible
+        async function checkCameraAccess() {
+            try {
+                const constraints = {
+                    video: { facingMode: { exact: "environment" } } // Use the back camera
+                };
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                // Stop the stream after checking
+                stream.getTracks().forEach(track => track.stop());
+                return true; // Camera access is granted
+            } catch (error) {
+                console.error("Camera access error:", error);
+                document.getElementById("cameraCheck").textContent = "Error: Unable to access the camera. Please check your camera settings.";
+                return false; // Camera access denied
+            }
+        }
+
+        // Start the QR scanner if camera access is granted
+        async function startScanner() {
+            document.getElementById("loadingMessage").textContent = "Checking camera access...";
+            const cameraAccessible = await checkCameraAccess();
+            if (cameraAccessible) {
+                document.getElementById("loadingMessage").textContent = ""; // Clear loading message
+                document.getElementById("reader").style.display = "block"; // Show the camera view
+                let html5QrcodeScanner = new Html5QrcodeScanner(
+                    "reader", { fps: 10, qrbox: 250 }
+                );
+
+                // Success and error callbacks
+                html5QrcodeScanner.render(onScanSuccess, onScanError)
+                    .catch(error => {
+                        console.error("Error initializing scanner:", error);
+                        document.getElementById("cameraCheck").textContent = "Error initializing scanner: " + error.message;
+                    });
+            } else {
+                // Camera access was denied or not available
+                document.getElementById("reader").style.display = "none"; // Hide the camera view
+            }
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            // Show a message before redirecting
+            alert("Attendance Recorded: " + decodedText);
+            // Redirects to the decoded URL (attendance page)
+            window.location.href = decodedText;  
+        }
+
+        function onScanError(errorMessage) {
+            // Handle scan errors here (e.g., show a message or log errors)
+            console.log("Scan error:", errorMessage);
+        }
+
+        // Start the camera access check and scanner
+        startScanner();
+    </script>
+</body>
+</html>
